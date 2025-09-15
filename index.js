@@ -17,8 +17,8 @@ const app=express()
 const server=http.createServer(app)
 const io=new Server(server,{
     cors: {
-    origin: process.env.SERVER_URL, // production में specific domain डालना
-    methods: ["GET", "POST"],
+    origin:  "https://food-order-frontend-two.vercel.app", // production में specific domain डालना
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }
 })
