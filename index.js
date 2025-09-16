@@ -36,14 +36,23 @@ app.use("/api/shop",shopRouter)
 app.use("/api/item",itemRouter)
 app.use("/api/order",orderRouter)
 
-
-
 socketHandler(io)
-
-
-
 
 server.listen(port,()=>{
     console.log(`server started at ${port}`)
     connectDb()
 })
+
+
+// ====== DB Connection ======
+mongoose
+  .connect(process.env.MONGOURL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err))
+
+// ====== Start Server ======
+const PORT = process.env.PORT || 8000
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`))
