@@ -25,7 +25,7 @@ const io=new Server(server,{
 })
 app.set("io", io);
 app.use(cors({
-    origin:process.env.SERVER_URL,
+    origin: "https://food-order-frontend-two.vercel.app",
     credentials:true
 }))
 app.use(express.json())
