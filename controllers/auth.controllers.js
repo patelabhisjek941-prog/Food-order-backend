@@ -92,7 +92,7 @@ export const googleAuth = async (req, res) => {
             user = await User.create({
                 fullName: fullName || "Google User",
                 email,
-                role: role || "customer",   // default role
+                role: role || "user",   // default role
                 mobile: mobile || ""
             })
         }
