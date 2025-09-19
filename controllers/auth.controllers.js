@@ -88,20 +88,30 @@ export const googleAuth = async (req, res) => {
     try {
         const { fullName, email, role, mobile } = req.body
         let user = await User.findOne({ email })
-        if (!user) {
+           if (!user) {
             user = await User.create({
-                fullName,
+                fullName: fullName || "Google User",
                 email,
-                role, mobile
+                role: role || "customer",   // default role
+                mobile: mobile || ""
             })
         }
+        // if (!user) {
+        //     user = await User.create({
+        //         fullName,
+        //         email,
+        //         role, mobile
+        //     })
+        // }
         const token = await genToken(user._id)
 
         res.cookie("token", token, {
             httpOnly: true,
             maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
-            secure: false,
-            sameSite: "Strict"
+            secure: true,
+            ameSite: "None"
+            // secure: false,
+            // sameSite: "Strict"
         })
 
         return res.status(201).json(user)
