@@ -14,26 +14,6 @@ shopRouter.get("/getshopsbycity/:city",isAuth,getShopsByCity)
 shopRouter.get("/getshopbyid/:shopId",isAuth,getShopById)
 export default shopRouter
 
-// import express from "express"
-// import {
-//   addShop,
-//   getAllShops,
-//   getCurrentShop,
-//   getShopById,
-//   getShopsByCity,
-// } from "../controllers/shop.controllers.js"
-// import isAuth from "../middlewares/isAuth.js"
-// import { upload } from "../middlewares/multer.js"
 
-// const shopRouter = express.Router()
 
-// // Public routes (no auth needed)
-// shopRouter.get("/getall", getAllShops)
-// shopRouter.get("/getshopsbycity/:city", getShopsByCity)
-// shopRouter.get("/getshopbyid/:shopId", getShopById)
 
-// // Protected routes (require login)
-// shopRouter.get("/getcurrent", isAuth, getCurrentShop)
-// shopRouter.post("/add", isAuth, upload.single("image"), addShop)
-
-// export default shopRouter
