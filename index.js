@@ -24,13 +24,13 @@ const io=new Server(server,{
 }
 })
 app.set("io", io);
-app.use(cookieParser())
+
 app.use(cors({
     origin: "https://food-order-frontend-two.vercel.app",
     credentials:true
 }))
 app.use(express.json())
-// app.use(cookieParser())
+app.use(cookieParser())
 app.use("/api/auth",authRouter)
 app.use("/api/user",userRouter)
 app.use("/api/shop",shopRouter)
