@@ -40,34 +40,38 @@ export const getAllShops=async (req,res) => {
 //     }
 // }
 
-   export const addShop = async (req, res) => {
+  export const addShop = async (req, res) => {
   try {
-    console.log('addShop called', { userId: req.userId, body: req.body, file: req.file });
     const { name, city, state, address } = req.body;
 
     if (!name || !city || !address) {
-      return res.status(400).json({ message: "Missing required fields: name/city/address" });
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
-    let image;
-    if (req.file) image = await uploadOnCloudinary(req.file.path);
+    let image = null;
+    if (req.file) {
+      image = await uploadOnCloudinary(req.file.path);
+    }
 
     let shop = await Shop.findOne({ owner: req.userId });
+
     if (!shop) {
       shop = await Shop.create({ name, city, state, address, image, owner: req.userId });
     } else {
-      shop.name = name || shop.name;
-      shop.image = image || shop.image;
-      shop.city = city || shop.city;
-      shop.state = state || shop.state;
-      shop.address = address || shop.address;
+      shop.name = name;
+      shop.city = city;
+      shop.state = state;
+      shop.address = address;
+      if (image) shop.image = image;
       await shop.save();
     }
+
     await shop.populate("owner");
     return res.status(200).json(shop);
+
   } catch (error) {
     console.error("addShop error:", error);
-    return res.status(500).json({ message: `add shop error ${error.message}` });
+    return res.status(500).json({ message: `Server error: ${error.message}` });
   }
 };
 
