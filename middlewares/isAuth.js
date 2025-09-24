@@ -1,23 +1,45 @@
 
+// import jwt from "jsonwebtoken";
+
+// const isAuth = async (req, res, next) => {
+//   try {
+//     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+//     if (!token) {
+//       return res.status(400).json({ message: "token is not found" });
+//     }
+
+//     const verifyToken = jwt.verify(token, process.env.JWT_SECRET);
+//     req.userId = verifyToken.userId;
+
+//     next();
+//   } catch (error) {
+//     return res.status(500).json({ message: `is auth error ${error}` });
+//   }
+// };
+
+// export default isAuth;
+
+
 import jwt from "jsonwebtoken";
 
-const isAuth = async (req, res, next) => {
+export default function isAuth(req, res, next) {
   try {
-    const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return res.status(400).json({ message: "token is not found" });
-    }
+    const token =
+      req.cookies?.token ||
+      (req.headers.authorization && req.headers.authorization.split(" ")[1]);
 
-    const verifyToken = jwt.verify(token, process.env.JWT_SECRET);
-    req.userId = verifyToken.userId;
+    console.log("isAuth token:", token);
+    if (!token) return res.status(400).json({ message: "token is not found" });
 
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.userId = decoded.userId || decoded.id || decoded._id;
     next();
-  } catch (error) {
-    return res.status(500).json({ message: `is auth error ${error}` });
+  } catch (err) {
+    console.error("isAuth error:", err);
+    return res.status(401).json({ message: "invalid/expired token" });
   }
-};
+}
 
-export default isAuth;
 
 
 
