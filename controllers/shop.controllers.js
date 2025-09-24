@@ -1,17 +1,17 @@
-import uploadOnCloudinary from "../config/cloudinary.js"
-import Shop from "../models/shop.model.js"
+// import uploadOnCloudinary from "../config/cloudinary.js"
+// import Shop from "../models/shop.model.js"
 
-export const getAllShops=async (req,res) => {
-    try {
-        const shops=await Shop.find({}).populate("owner")
-        if(shops.length>0){
-            return res.status(200).json(shops)
-        }
-        return
-    } catch (error) {
-        return res.status(500).json({message:`get all shops error ${error}`})
-    }
-}
+// export const getAllShops=async (req,res) => {
+//     try {
+//         const shops=await Shop.find({}).populate("owner")
+//         if(shops.length>0){
+//             return res.status(200).json(shops)
+//         }
+//         return
+//     } catch (error) {
+//         return res.status(500).json({message:`get all shops error ${error}`})
+//     }
+// }
 
 // export const addShop=async (req,res)=>{
 //     try {
@@ -40,88 +40,108 @@ export const getAllShops=async (req,res) => {
 //     }
 // }
 
-  export const addShop = async (req, res) => {
-  try {
-    const { name, city, state, address } = req.body;
+ 
 
-    if (!name || !city || !address) {
-      return res.status(400).json({ message: "Missing required fields" });
+
+
+
+// export const getCurrentShop=async (req,res) => {
+//     try {
+//         const shop=await Shop.findOne({owner:req.userId}).populate("owner").populate({
+//         path: "items",
+//         options: { sort: { createdAt: -1 } }
+//       });
+//         if(shop){
+// return res.status(200).json(shop)
+//         }
+//         return null
+//     } catch (error) {
+//          return res.status(500).json({message:`get shop error ${error}`})
+//     }
+// }
+
+// export const getShopsByCity=async (req,res)=>{
+//     try {
+//         const { city } = req.params;
+
+//     if (!city) {
+//       return res.status(400).json({ message: "City parameter is required" });
+//     }
+
+//     // Case-insensitive search
+//     const shops = await Shop.find({
+//       city: { $regex: new RegExp(`^${city}$`, "i") }
+//     });
+   
+//     return res.status(200).json(shops);
+//     } catch (error) {
+//          return res.status(500).json({message:`get shop by city error ${error}`})
+//     }
+// }
+
+// export const getShopById=async (req,res)=>{
+// try {
+//     const {shopId}=req.params
+//     const shop=await Shop.findById(shopId)
+//     if(!shop){
+//          return res.status(400).json({ message: "shop not found" });
+//     }
+//     return res.status(200).json(shop);
+
+// } catch (error) {
+//     return res.status(500).json({message:`get shop by id error ${error}`})
+// }
+// }
+
+
+
+
+import uploadOnCloudinary from "../config/cloudinary.js";
+import Shop from "../models/shop.model.js";
+
+export const addOrEditShop = async (req, res) => {
+  try {
+    // req.userId comes from isAuth middleware
+    if (!req.userId) {
+      return res.status(401).json({ message: "No token found. Please login again." });
     }
 
-    let image = null;
+    const { name, city, state, address } = req.body;
+
+    // Upload image if present
+    let image;
     if (req.file) {
       image = await uploadOnCloudinary(req.file.path);
     }
 
+    // Find existing shop for this owner
     let shop = await Shop.findOne({ owner: req.userId });
 
     if (!shop) {
-      shop = await Shop.create({ name, city, state, address, image, owner: req.userId });
+      // Create new shop
+      shop = await Shop.create({
+        name,
+        city,
+        state,
+        address,
+        image,
+        owner: req.userId,
+      });
     } else {
+      // Update existing shop
       shop.name = name;
       shop.city = city;
       shop.state = state;
       shop.address = address;
-      if (image) shop.image = image;
+      if (image) shop.image = image; // only update if new image uploaded
       await shop.save();
     }
 
     await shop.populate("owner");
     return res.status(200).json(shop);
-
   } catch (error) {
-    console.error("addShop error:", error);
-    return res.status(500).json({ message: `Server error: ${error.message}` });
+    console.error("Add/Edit shop error:", error);
+    return res.status(500).json({ message: `Add/Edit shop error: ${error.message}` });
   }
 };
 
-
-
-
-export const getCurrentShop=async (req,res) => {
-    try {
-        const shop=await Shop.findOne({owner:req.userId}).populate("owner").populate({
-        path: "items",
-        options: { sort: { createdAt: -1 } }
-      });
-        if(shop){
-return res.status(200).json(shop)
-        }
-        return null
-    } catch (error) {
-         return res.status(500).json({message:`get shop error ${error}`})
-    }
-}
-
-export const getShopsByCity=async (req,res)=>{
-    try {
-        const { city } = req.params;
-
-    if (!city) {
-      return res.status(400).json({ message: "City parameter is required" });
-    }
-
-    // Case-insensitive search
-    const shops = await Shop.find({
-      city: { $regex: new RegExp(`^${city}$`, "i") }
-    });
-   
-    return res.status(200).json(shops);
-    } catch (error) {
-         return res.status(500).json({message:`get shop by city error ${error}`})
-    }
-}
-
-export const getShopById=async (req,res)=>{
-try {
-    const {shopId}=req.params
-    const shop=await Shop.findById(shopId)
-    if(!shop){
-         return res.status(400).json({ message: "shop not found" });
-    }
-    return res.status(200).json(shop);
-
-} catch (error) {
-    return res.status(500).json({message:`get shop by id error ${error}`})
-}
-}
