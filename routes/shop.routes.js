@@ -1,5 +1,5 @@
 import express from "express"
-import { addShop, getAllShops, getCurrentShop, getShopById, getShopsByCity } from "../controllers/shop.controllers.js"
+import { editShop,addShop, getAllShops, getCurrentShop, getShopById, getShopsByCity } from "../controllers/shop.controllers.js"
 import isAuth from "../middlewares/isAuth.js"
 import { upload } from "../middlewares/multer.js"
 
