@@ -1,36 +1,31 @@
-
-// import jwt from "jsonwebtoken";
-
-// const isAuth = async (req, res, next) => {
-//   try {
-//     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-//     if (!token) {
-//       return res.status(400).json({ message: "token is not found" });
-//     }
-
-//     const verifyToken = jwt.verify(token, process.env.JWT_SECRET);
-//     req.userId = verifyToken.userId;
-
-//     next();
-//   } catch (error) {
-//     return res.status(500).json({ message: `is auth error ${error}` });
-//   }
-// };
-
-// export default isAuth;
-
 import jwt from "jsonwebtoken";
+import User from "../models/user.model.js";
 
-export default function isAuth(req, res, next) {
+export default async function isAuth(req, res, next) {
   try {
-    // Get token from header or cookie
+    // Get token from multiple sources
+    let token = null;
+
+    // 1. Check Authorization header
     const authHeader = req.headers.authorization;
-    const token = authHeader?.startsWith("Bearer ")
-      ? authHeader.split(" ")[1]
-      : req.cookies?.token;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    }
+    
+    // 2. Check cookies
+    if (!token && req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    // 3. Check query string (optional, for development)
+    if (!token && req.query?.token) {
+      token = req.query.token;
+    }
 
     if (!token) {
-      return res.status(401).json({ message: "No token found. Please login again." });
+      return res.status(401).json({ 
+        message: "Access denied. No token provided." 
+      });
     }
 
     // Verify token
@@ -38,25 +33,55 @@ export default function isAuth(req, res, next) {
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
     } catch (err) {
-      return res.status(401).json({ message: "Invalid or expired token." });
+      return res.status(401).json({ 
+        message: "Invalid or expired token." 
+      });
     }
 
-    // Attach userId to request
-    req.userId = decoded.userId || decoded.id || decoded._id;
-
-    if (!req.userId) {
-      return res.status(401).json({ message: "Invalid token payload." });
+    // Check if user still exists
+    const user = await User.findById(decoded.userId || decoded.id || decoded._id);
+    if (!user) {
+      return res.status(401).json({ 
+        message: "User no longer exists." 
+      });
     }
+
+    // Attach user to request
+    req.userId = user._id;
+    req.user = user;
 
     next();
-  } catch (err) {
-    console.error("isAuth unexpected error:", err);
-    return res.status(500).json({ message: "Authentication failed." });
+  } catch (error) {
+    console.error("Auth middleware error:", error);
+    return res.status(500).json({ 
+      message: "Authentication failed." 
+    });
   }
 }
 
+// Optional: Middleware to check specific roles
+export function requireRole(roles) {
+  return async (req, res, next) => {
+    try {
+      if (!req.userId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
 
+      const user = await User.findById(req.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
+      if (!roles.includes(user.role)) {
+        return res.status(403).json({ 
+          message: "Access denied. Insufficient permissions." 
+        });
+      }
 
-
-
+      next();
+    } catch (error) {
+      console.error("Role check error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };
+}
