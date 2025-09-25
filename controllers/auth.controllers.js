@@ -125,127 +125,103 @@ import User from "../models/user.model.js"
 // }
 
 
-// ------------------- SIGNUP -------------------
+// ===== SIGN UP =====
 export const signUp = async (req, res) => {
   try {
     const { fullName, email, password, role, mobile } = req.body;
 
-    const findByEmail = await User.findOne({ email });
-    if (findByEmail) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser)
       return res.status(400).json({ message: "Email already exists!" });
-    }
 
-    if (password && password.length < 6) {
+    if (!password || password.length < 6)
       return res.status(400).json({ message: "Password must be at least 6 characters" });
-    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
-      fullName,
-      email,
-      role,
-      mobile,
-      password: hashedPassword,
-    });
+    const user = await User.create({ fullName, email, role, mobile, password: hashedPassword });
+    const token = genToken(user._id);
 
-    const token = await genToken(user._id);
-
-    // Set cookie
+    // Send token in cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 10 * 24 * 60 * 60 * 1000, // 10 days
+      secure: true, // for HTTPS in production
+      sameSite: "None", // cross-domain cookie
+      maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
     });
 
-    // Send user + token in JSON
-    return res.status(201).json({
-      message: "Signup successful",
-      token,
-      user,
-    });
+    return res.status(201).json({ user, token });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: `Signup error: ${error}` });
+    console.error(error);
+    return res.status(500).json({ message: `Signup error: ${error.message}` });
   }
 };
 
-// ------------------- SIGNIN -------------------
+// ===== SIGN IN =====
 export const signIn = async (req, res) => {
   try {
-    const { password, email } = req.body;
-
+    const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "User not found!" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Incorrect Password!" });
+    if (!isMatch) return res.status(400).json({ message: "Incorrect password!" });
 
-    const token = await genToken(user._id);
-
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Strict",
-      maxAge: 10 * 24 * 60 * 60 * 1000,
-    });
-
-    return res.status(200).json({
-      message: "Signin successful",
-      token,
-      user,
-    });
-  } catch (error) {
-    return res.status(500).json({ message: `Signin error: ${error}` });
-  }
-};
-
-// ------------------- SIGNOUT -------------------
-export const signOut = async (req, res) => {
-  try {
-    res.clearCookie("token");
-    return res.status(200).json({ message: "Signed out successfully" });
-  } catch (error) {
-    return res.status(500).json({ message: `Signout error: ${error}` });
-  }
-};
-
-// ------------------- GOOGLE AUTH -------------------
-export const googleAuth = async (req, res) => {
-  try {
-    const { fullName, email, role, mobile } = req.body;
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      user = await User.create({
-        fullName: fullName || "Google User",
-        email,
-        role: role || "user",
-        mobile: mobile || "",
-      });
-    }
-
-    const token = await genToken(user._id);
+    const token = genToken(user._id);
 
     res.cookie("token", token, {
       httpOnly: true,
       secure: true,
       sameSite: "None",
-      maxAge: 10 * 24 * 60 * 60 * 1000,
+      maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
     });
 
-    return res.status(201).json({
-      message: "Google auth successful",
-      token,
-      user,
-    });
+    return res.status(200).json({ user, token });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: `Google auth error: ${error}` });
+    return res.status(500).json({ message: `Signin error: ${error.message}` });
   }
 };
 
+// ===== GOOGLE AUTH =====
+export const googleAuth = async (req, res) => {
+  try {
+    const { fullName, email, mobile, role } = req.body;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = await User.create({
+        fullName: fullName || "Google User",
+        email,
+        mobile: mobile || "",
+        role: role || "user",
+      });
+    }
+
+    const token = genToken(user._id);
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+      maxAge: 10 * 365 * 24 * 60 * 60 * 1000,
+    });
+
+    return res.status(201).json({ user, token });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: `Google auth error: ${error.message}` });
+  }
+};
+
+// ===== SIGN OUT =====
+export const signOut = async (req, res) => {
+  try {
+    res.clearCookie("token", { sameSite: "None", secure: true });
+    return res.status(200).json({ message: "Signed out successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: `Signout error: ${error.message}` });
+  }
+};
 
 
 
