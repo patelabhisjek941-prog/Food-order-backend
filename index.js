@@ -19,24 +19,21 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "https://food-order-frontend-two.vercel.app",
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
   },
 });
 
 app.set("io", io);
 
-// Enhanced CORS configuration
+// Middleware
 app.use(cors({
-  origin: "https://food-order-frontend-two.vercel.app",
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
 }));
 
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Routes
@@ -46,7 +43,7 @@ app.use("/api/shop", shopRouter);
 app.use("/api/item", itemRouter);
 app.use("/api/order", orderRouter);
 
-// Health check route
+// Health check
 app.get("/api/health", (req, res) => {
   res.status(200).json({ 
     message: "Server is running", 
@@ -59,10 +56,10 @@ socketHandler(io);
 
 // Error handling middleware
 app.use((error, req, res, next) => {
-  console.error("Unhandled error:", error);
+  console.error("Error:", error);
   res.status(500).json({ 
     message: "Internal server error",
-    ...(process.env.NODE_ENV === 'development' && { error: error.message })
+    error: process.env.NODE_ENV === 'development' ? error.message : undefined
   });
 });
 
@@ -71,17 +68,15 @@ app.use("*", (req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
 
-const port = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8000;
 
-// Connect to database and start server
 const startServer = async () => {
   try {
     await connectDb();
-    console.log("✅ Database connected successfully");
+    console.log("✅ Database connected");
     
-    server.listen(port, () => {
-      console.log(`🚀 Server running on port ${port}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   } catch (error) {
     console.error("❌ Failed to start server:", error);
